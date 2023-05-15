@@ -31,15 +31,13 @@ fn main()
 
         in vec2 position;
 
-        // uniform: a global var whose value is set when we draw by passing
-        // its value to the `draw`function (`uniform!` macro)
-        uniform float t;
+        uniform mat4 matrix;
 
         void main()
         {
-            vec2 pos = position;
-            pos.x += t;
-            gl_Position = vec4(pos, 0.0, 1.0);
+            // NOTE: order of multiplication is important; to write
+            // vertex * matrix is an entirely different operation
+            gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
 
@@ -64,14 +62,13 @@ fn main()
     ).unwrap();
 
     let vertex1 = Vertex { position: [-0.5, -0.5] };
-    let vertex2 = Vertex { position: [0.0, 0.5] };
-    let vertex3 = Vertex { position: [0.5, -0.25] };
+    let vertex2 = Vertex { position: [ 0.0,  0.5] };
+    let vertex3 = Vertex { position: [ 0.5, -0.25] };
     let shape = vec![vertex1, vertex2, vertex3];
 
     let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
     let mut t: f32 = -0.5;
     event_loop.run(move |event, _, control_flow| {
-
         match event
         {
             glutin::event::Event::WindowEvent { event, .. } => match event
@@ -105,11 +102,19 @@ fn main()
             t = -0.5;
         }
 
+        let uniforms = uniform! {
+            matrix: [
+                [ t.cos(), t.sin(), 0.0, 0.0],
+                [-t.sin(), t.cos(), 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0f32]
+            ]
+        };
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
         target.draw(
             &vertex_buffer, &indices, &program,
-            &uniform! { t: t }, &Default::default()
+            &uniforms, &Default::default()
         ).unwrap();
         target.finish().unwrap();
     });
