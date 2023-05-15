@@ -31,14 +31,22 @@ fn main()
 
         in vec2 position;
 
+        // uniform: a global var whose value is set when we draw by passing
+        // its value to the `draw`function (`uniform!` macro)
+        uniform float t;
+
         void main()
         {
-            gl_Position = vec4(position, 0.0, 1.0);
+            vec2 pos = position;
+            pos.x += t;
+            gl_Position = vec4(pos, 0.0, 1.0);
         }
     "#;
 
     // GLSL code for a fragment shader
     let fragment_shader_src = r#"
+        #version 140
+
         // "varying" is required here otherwise error C5060 appears because
         // trouble with 'non-varying color
         varying out vec4 color;
@@ -55,10 +63,15 @@ fn main()
         fragment_shader_src, None
     ).unwrap();
 
+    let vertex1 = Vertex { position: [-0.5, -0.5] };
+    let vertex2 = Vertex { position: [0.0, 0.5] };
+    let vertex3 = Vertex { position: [0.5, -0.25] };
+    let shape = vec![vertex1, vertex2, vertex3];
+
+    let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
     let mut t: f32 = -0.5;
-    // run event loop
-    event_loop.run(move |event, _, control_flow|
-    {
+    event_loop.run(move |event, _, control_flow| {
+
         match event
         {
             glutin::event::Event::WindowEvent { event, .. } => match event
@@ -80,33 +93,25 @@ fn main()
         }
 
         let next_frame_time = std::time::Instant::now()
-            + std::time::Duration::from_nanos(16_666_67);
-        *control_flow = glutin::event_loop::ControlFlow
-            ::WaitUntil(next_frame_time);
+            + std::time::Duration::from_nanos(16_666_667);
+        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(
+            next_frame_time
+        );
 
-        // update `t`
+        // we update `t`
         t += 0.0002;
         if t > 0.5
         {
             t = -0.5;
         }
 
-        // initialize triangle
-        let vertex1 = Vertex { position: [-0.5 + t, -0.5] };
-        let vertex2 = Vertex { position: [0.0 + t, 0.5] };
-        let vertex3 = Vertex { position: [0.5 + t, -0.25] };
-        let shape = vec![vertex1, vertex2, vertex3];
-
-        // construct Glium vertex buffer
-        let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
         target.draw(
             &vertex_buffer, &indices, &program,
-            &glium::uniforms::EmptyUniforms, &Default::default()
+            &uniform! { t: t }, &Default::default()
         ).unwrap();
-        target.finish().unwrap(); // destroy frame and copy surface to screen
+        target.finish().unwrap();
     });
 }
 
