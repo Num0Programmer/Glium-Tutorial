@@ -25,15 +25,18 @@ fn main()
 
     // GLSL code for a vertex shader
     let vertex_shader_src = r#"
-        #version 140
+        #version 150 // GLSL version which supports trig functions
 
         in vec3 position;
         in vec3 normal;
+
+        out vec3 v_normal; // used to get normal data to fragment shader
 
         uniform mat4 matrix;
 
         void main()
         {
+            v_normal = transpose(inverse(mat3(matrix))) * normal;
             gl_Position = matrix * vec4(position, 1.0);
         }
     "#;
@@ -42,11 +45,19 @@ fn main()
     let fragment_shader_src = r#"
         #version 140
 
+        in vec3 v_normal;
         out vec4 color;
+        uniform vec3 u_light;
 
         void main()
         {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
+            float brightness = dot(normalize(v_normal), normalize(u_light));
+            vec3 dark_color = vec3(0.6, 0.0, 0.0);
+            vec3 regular_color = vec3(1.0, 0.0, 0.0);
+
+            // mix() interpolates between light and dark to give us a gradiant
+            // across objects
+            color = vec4(mix(dark_color, regular_color, brightness), 1.0);
         }
     "#;
 
@@ -85,6 +96,7 @@ fn main()
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
+        let light = [-1.0, 0.4, 0.9f32];
         let matrix = [
             [0.01, 0.0, 0.0, 0.0],
             [0.0, 0.01, 0.0, 0.0],
@@ -93,8 +105,11 @@ fn main()
         ];
 
         target.draw(
-            (&positions, &normals), &indices, &program,
-            &uniform! { matrix: matrix }, &Default::default()
+            (&positions, &normals),
+            &indices,
+            &program,
+            &uniform! { matrix: matrix, u_light: light },
+            &Default::default()
         ).unwrap();
         target.finish().unwrap();
     });
