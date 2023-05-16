@@ -30,13 +30,13 @@ fn main()
         #version 140
 
         in vec2 position;
+        out vec2 my_attr; // our new attribute
 
         uniform mat4 matrix;
 
         void main()
         {
-            // NOTE: order of multiplication is important; to write
-            // vertex * matrix is an entirely different operation
+            my_attr = position; // we need to set the value of each `out` variable
             gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
@@ -45,13 +45,12 @@ fn main()
     let fragment_shader_src = r#"
         #version 140
 
-        // "varying" is required here otherwise error C5060 appears because
-        // trouble with 'non-varying color
-        varying out vec4 color;
+        in vec2 my_attr;
+        out vec4 color;
 
         void main()
         {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
+            color = vec4(my_attr, 0.0, 1.0); // we build a vec4 from a vec2 and two floats
         }
     "#;
 
