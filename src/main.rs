@@ -44,13 +44,14 @@ fn main()
         #version 140
 
         in vec2 position;
-        out vec2 my_attr; // our new attribute
+        in vec2 tex_coords;
+        out vec2 v_tex_coords;
 
         uniform mat4 matrix;
 
         void main()
         {
-            my_attr = position; // we need to set the value of each `out` variable
+            v_tex_coords = tex_coords;
             gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
@@ -59,12 +60,14 @@ fn main()
     let fragment_shader_src = r#"
         #version 140
 
-        in vec2 my_attr;
+        in vec2 v_tex_coords;
         out vec4 color;
+
+        uniform sampler2D tex;
 
         void main()
         {
-            color = vec4(my_attr, 0.0, 1.0); // we build a vec4 from a vec2 and two floats
+            color = texture(tex, v_tex_coords);
         }
     "#;
 
@@ -121,7 +124,8 @@ fn main()
                 [-t.sin(), t.cos(), 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0f32]
-            ]
+            ],
+            tex: &texture
         };
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
