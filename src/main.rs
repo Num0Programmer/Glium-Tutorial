@@ -122,7 +122,7 @@ fn main()
             [0.01, 0.0, 0.0, 0.0],
             [0.0, 0.01, 0.0, 0.0],
             [0.0, 0.0, 0.01, 0.0],
-            [0.0, 0.0, 9.0, 1.0f32]
+            [0.0, 0.0, 2.0, 1.0f32]
         ];
         // needed to tell backend what to do with a list of 'possible'
         // operations; needed because depth test and buffer handling happen on
@@ -138,6 +138,9 @@ fn main()
                 write: true,
                 .. Default::default()
             },
+            // turns on backface culling operation
+            backface_culling: glium::draw_parameters::BackfaceCullingMode
+                ::CullClockwise,
             .. Default::default()
         };
 
