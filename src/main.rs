@@ -13,7 +13,9 @@ fn main()
     // construct Glium Display and event loop
     let mut event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
-    let cb = glutin::ContextBuilder::new();
+    // depth buffer helps with determining if a pixel should be repainted with
+    // newest fragment value
+    let cb = glutin::ContextBuilder::new().with_depth_buffer(24); // 24 bits
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     // load teapot
@@ -94,7 +96,8 @@ fn main()
         }
 
         let mut target = display.draw();
-        target.clear_color(0.0, 0.0, 1.0, 1.0);
+        // reset display color and depth buffer to blue and 1, respectively
+        target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
 
         let light = [-1.0, 0.4, 0.9f32];
         let matrix = [
@@ -103,13 +106,29 @@ fn main()
             [0.0, 0.0, 0.01, 0.0],
             [0.0, 0.0, 0.0, 1.0f32]
         ];
+        // needed to tell backend what to do with a list of 'possible'
+        // operations; needed because depth test and buffer handling happen on
+        // hardware
+        let params = glium::DrawParameters {
+            depth: glium::Depth {
+                // indicates pixels should only be kept if depth is less than
+                // existing value in depth buffer
+                test: glium::draw_parameters::DepthTest::IfLess,
+
+                // indicates depth value of pixels which pass the test should
+                // be written to depth buffer
+                write: true,
+                .. Default::default()
+            },
+            .. Default::default()
+        };
 
         target.draw(
             (&positions, &normals),
             &indices,
             &program,
             &uniform! { matrix: matrix, u_light: light },
-            &Default::default()
+            &params
         ).unwrap();
         target.finish().unwrap();
     });
